@@ -1,0 +1,11 @@
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/bin/Debug/netcoreapp2.2/ServiceTester.deps.json
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/bin/Debug/netcoreapp2.2/ServiceTester.runtimeconfig.json
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/bin/Debug/netcoreapp2.2/ServiceTester.runtimeconfig.dev.json
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/bin/Debug/netcoreapp2.2/ServiceTester.dll
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/bin/Debug/netcoreapp2.2/ServiceTester.pdb
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.csprojAssemblyReference.cache
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.csproj.CoreCompileInputs.cache
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.AssemblyInfoInputs.cache
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.AssemblyInfo.cs
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.dll
+/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/Debug/netcoreapp2.2/ServiceTester.pdb

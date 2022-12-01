@@ -1,0 +1,64 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/ServiceTester.csproj": {}
+  },
+  "projects": {
+    "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/ServiceTester.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/ServiceTester.csproj",
+        "projectName": "ServiceTester",
+        "projectPath": "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/ServiceTester.csproj",
+        "packagesPath": "/Users/alekseyrublevsky/.nuget/packages/",
+        "outputPath": "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "/usr/local/share/dotnet_legacy/sdk/NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "/Users/alekseyrublevsky/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp2.2"
+        ],
+        "sources": {
+          "http://nuget.local/api/v2": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://pacman-build.dev.dating/api/v4/projects/573/packages/nuget/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp2.2": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp2.2": {
+          "dependencies": {
+            "Gems.Hosting.Bootstrapper.ServiceBus": {
+              "target": "Package",
+              "version": "[4.2.24, )"
+            },
+            "Microsoft.NETCore.App": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.2.0, )",
+              "autoReferenced": true
+            }
+          },
+          "imports": [
+            "net461"
+          ],
+          "assetTargetFallback": true,
+          "warn": true
+        }
+      }
+    }
+  }
+}
