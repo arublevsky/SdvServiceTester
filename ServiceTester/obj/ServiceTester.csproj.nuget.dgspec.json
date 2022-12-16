@@ -13,22 +13,19 @@
         "packagesPath": "/Users/alekseyrublevsky/.nuget/packages/",
         "outputPath": "/Users/alekseyrublevsky/Work/ServiceTester/ServiceTester/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "/usr/local/share/dotnet_legacy/sdk/NuGetFallbackFolder"
-        ],
         "configFilePaths": [
           "/Users/alekseyrublevsky/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "netcoreapp2.2"
+          "net6.0"
         ],
         "sources": {
-          "http://nuget.local/api/v2": {},
           "https://api.nuget.org/v3/index.json": {},
           "https://pacman-build.dev.dating/api/v4/projects/573/packages/nuget/index.json": {}
         },
         "frameworks": {
-          "netcoreapp2.2": {
+          "net6.0": {
+            "targetAlias": "net6.0",
             "projectReferences": {}
           }
         },
@@ -39,24 +36,31 @@
         }
       },
       "frameworks": {
-        "netcoreapp2.2": {
+        "net6.0": {
+          "targetAlias": "net6.0",
           "dependencies": {
             "Gems.Hosting.Bootstrapper.ServiceBus": {
               "target": "Package",
               "version": "[4.2.24, )"
-            },
-            "Microsoft.NETCore.App": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[2.2.0, )",
-              "autoReferenced": true
             }
           },
           "imports": [
-            "net461"
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
           ],
           "assetTargetFallback": true,
-          "warn": true
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/x64/sdk/6.0.403/RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -5,7 +5,7 @@ using Contour;
 using Contour.Transport.RabbitMQ;
 using Gems.Hosting.Bootstrapper.ServiceBus;
 using Gems.ServiceBus.Emitting;
-using Newtonsoft.Json.Linq;
+using ServiceTester.Upload;
 
 namespace ServiceTester
 {
@@ -13,41 +13,85 @@ namespace ServiceTester
     {
         static void Main(string[] args)
         {
-            GetUsersRecommendations();
+            UploadUsersRecommendations();
         }
 
         private static void GetUsersRecommendations()
         {
-            using (var bus = new BusFactory().Create(configurator =>
-                   {
-                       configurator.UsePayloadConverter(new JsonNetPayloadConverter());
-                       configurator.SetEndpoint("Users.Personal.Pipe");
-                       configurator.SetConnectionString("amqp://service:cp@docker.39.stage/cp");
-                       configurator
-                           .Route("command.users.recommendations.find") // сюда подставляется значение из label
-                           .WithConnectionString(
-                               "amqp://service:cp@docker.39.stage/users") // нужный нам connection string
-                           .WithAlias(
-                               "command.users.recommendations.find") // он же key в конфигурации вызывающего компонента
-                           .WithDefaultCallbackEndpoint(); // соответствует стандартному "callbackEndpoint": { "default": true } в конфигурации вызывающего компонента
-                   }))
+            using var bus = new BusFactory().Create(configurator =>
             {
-                var messageEmitter = new MessageEmitter(
-                    new DefaultRouteMapProvider(new Dictionary<Type, string>
-                    {
-                        { typeof(FindCommand), ":command.users.recommendations.find" }
-                    }));
-                messageEmitter.RegisterEndpoint(bus);
+                configurator.UsePayloadConverter(new JsonNetPayloadConverter());
+                configurator.SetEndpoint("Users.Personal.Pipe");
+                configurator.SetConnectionString("amqp://service:cp@docker.39.stage/cp");
+                configurator
+                    .Route("command.users.recommendations.find") // сюда подставляется значение из label
+                    .WithConnectionString(
+                        "amqp://service:cp@docker.39.stage/users") // нужный нам connection string
+                    .WithAlias(
+                        "command.users.recommendations.find") // он же key в конфигурации вызывающего компонента
+                    .WithDefaultCallbackEndpoint(); // соответствует стандартному "callbackEndpoint": { "default": true } в конфигурации вызывающего компонента
+            });
+            var messageEmitter = new MessageEmitter(
+                new DefaultRouteMapProvider(new Dictionary<Type, string>
+                {
+                    { typeof(FindCommand), ":command.users.recommendations.find" }
+                }));
+            messageEmitter.RegisterEndpoint(bus);
 
-                var response = messageEmitter.RequestAsync<FindCommand, FindResponse>(
-                    new FindCommand
-                    {
-                        UserId = 310102041980,
-                        Model = "byResearchCenter"
-                    }).Result;
+            var response = messageEmitter.RequestAsync<FindCommand, FindResponse>(
+                new FindCommand
+                {
+                    UserId = 310102041980,
+                    Model = "byResearchCenter"
+                }).Result;
 
-                Console.Write(response);
-            }
+            Console.Write(response);
+        }
+
+        private static void UploadUsersRecommendations()
+        {
+            using var bus = new BusFactory().Create(configurator =>
+            {
+                configurator.UsePayloadConverter(new JsonNetPayloadConverter());
+                configurator.SetEndpoint("Users.Personal.Pipe");
+                configurator.SetConnectionString("amqp://service:cp@docker.39.stage/annals");
+                configurator
+                    .Route("event.annals.uploaded..users.recommendations") // сюда подставляется значение из label
+                    .WithConnectionString(
+                        "amqp://service:cp@docker.39.stage/annals") // нужный нам connection string
+                    .WithAlias(
+                        "event.annals.uploaded..users.recommendations") // он же key в конфигурации вызывающего компонента
+                    .WithDefaultCallbackEndpoint(); // соответствует стандартному "callbackEndpoint": { "default": true } в конфигурации вызывающего компонента
+            });
+            var messageEmitter = new MessageEmitter(
+                new DefaultRouteMapProvider(new Dictionary<Type, string>
+                {
+                    { typeof(UploadMessage), ":event.annals.uploaded..users.recommendations" }
+                }));
+            messageEmitter.RegisterEndpoint(bus);
+
+            messageEmitter.EmitAsync(
+                new UploadMessage
+                {
+                    Recommendations = new UploadModel
+                    {
+                        Expiration = DateTime.Now,
+                        ModelType = "UploadMessage",
+                        Data = new []{new UploadData
+                        {
+                            Records = new List<UploadRecord>
+                            {
+                                new()
+                                {
+                                    Score = 777,
+                                    RecommendedId = 999
+                                }
+                            }
+                        }}
+                    }
+                }).GetAwaiter().GetResult();
+
+            Console.Write("response");
         }
 
         private static void GetPltv()
