@@ -16,6 +16,8 @@ namespace ServiceTester
             UploadUsersRecommendations();
         }
 
+        #region get recommendations
+
         private static void GetUsersRecommendations()
         {
             using var bus = new BusFactory().Create(configurator =>
@@ -47,6 +49,27 @@ namespace ServiceTester
 
             Console.Write(response);
         }
+
+        internal class FindResponse
+        {
+            public List<RecommItem> Recommendations { get; set; }
+        }
+
+        internal class RecommItem
+        {
+            public long UserId { get; set; }
+            public Decimal Score { get; set; }
+        }
+
+        internal class FindCommand
+        {
+            public long UserId { get; set; }
+            public string Model { get; set; }
+        }
+
+        #endregion
+
+        #region upload recommendations
 
         private static void UploadUsersRecommendations()
         {
@@ -94,6 +117,10 @@ namespace ServiceTester
             Console.Write("response");
         }
 
+        #endregion
+
+        #region get pltv
+
         private static void GetPltv()
         {
             using (var bus = new BusFactory().Create(configurator =>
@@ -125,34 +152,19 @@ namespace ServiceTester
                 Console.Write(response.Pltv?.ToString());
             }
         }
-    }
 
-    internal class FindResponse
-    {
-        public List<RecommItem> Recommendations { get; set; }
-    }
+        internal class FindPltvResponse
+        {
+            public decimal? Pltv { get; set; }
 
-    internal class RecommItem
-    {
-        public long UserId { get; set; }
-        public Decimal Score { get; set; }
-    }
+            public decimal? PltvMax { get; set; }
+        }
 
-    internal class FindCommand
-    {
-        public long UserId { get; set; }
-        public string Model { get; set; }
-    }
+        internal class FindPltvCommand
+        {
+            public long UserId { get; set; }
+        }
 
-    internal class FindPltvResponse
-    {
-        public decimal? Pltv { get; set; }
-
-        public decimal? PltvMax { get; set; }
-    }
-
-    internal class FindPltvCommand
-    {
-        public long UserId { get; set; }
+        #endregion
     }
 }

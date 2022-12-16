@@ -11,4 +11,6 @@ public class ImportSettings
     public int BatchSize { get; set; }
 
     public int RequestsParallelism { get; set; }
+
+    public long TotalRequests => TotalRecords / BatchSize;
 }

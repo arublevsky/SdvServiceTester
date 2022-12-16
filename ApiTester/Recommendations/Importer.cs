@@ -17,50 +17,34 @@ public static class Importer
 
         Console.WriteLine($"Starting import to the server: {settings.ApiBase}");
 
-        var totalRequests = settings.TotalRecords / settings.BatchSize;
-        var models = GenerateModels(settings, totalRequests);
+        await RunImport(client, settings, token);
+    }
 
+    private static async Task RunImport(
+        RestClient client,
+        ImportSettings settings,
+        CancellationToken token)
+    {
         var sw = Stopwatch.StartNew();
         if (settings.RequestsParallelism > 1)
         {
-            await SendInParallel(settings, models, client, token);
+            await SendInParallel(settings, client, token);
         }
         else
         {
-            await SendInSequence(settings, models, client, token);
+            await SendInSequence(settings, client, token);
         }
 
         sw.Stop();
         Console.WriteLine($"All requests sent. Time elapsed: {sw.Elapsed.TotalSeconds:0.##}s");
     }
 
-    private static IList<string> GenerateModels(ImportSettings settings, long totalRequests)
-    {
-        var models = new List<string>();
-        var totalMbToSend = 0d;
-
-        for (var i = 0; i < totalRequests; i++)
-        {
-            var model = CreateImportModel(i, totalRequests, settings.BatchSize);
-            totalMbToSend += GetBodySizeInMb(model);
-            models.Add(model);
-        }
-
-        Console.WriteLine("Models prepared. " +
-                          $"Total models: {models.Count}; Each with {settings.BatchSize} records; " +
-                          $"Total size: {totalMbToSend:0.##} MB");
-        return models;
-    }
-
-    private static Task SendInParallel(
-        ImportSettings settings,
-        IEnumerable<string> models,
-        RestClient client,
-        CancellationToken token)
+    private static async Task SendInParallel(ImportSettings settings, RestClient client, CancellationToken token)
     {
         Console.WriteLine($"RequestsParallelism = {settings.RequestsParallelism}, sending models in parallel.");
 
-        return Parallel.ForEachAsync(
+        var models = GenerateModels(settings);
+        await Parallel.ForEachAsync(
             models,
             new ParallelOptions
             {
@@ -78,19 +62,38 @@ public static class Importer
 
     private static async Task SendInSequence(
         ImportSettings settings,
-        IList<string> models,
         RestClient client,
         CancellationToken token)
     {
         Console.WriteLine("RequestsParallelism = 1, sending models one-by-one.");
+
+        var models = GenerateModels(settings);
 
         for (var i = 0; i < models.Count; i++)
         {
             var request = CreateRequest(settings);
             request.AddBody(models[i]);
             var response = await client.ExecuteAsync(request, token);
-            Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{i + 1})");
+            Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{++i})");
         }
+    }
+
+    private static IList<string> GenerateModels(ImportSettings settings)
+    {
+        var models = new List<string>();
+        var totalMbToSend = 0d;
+
+        for (var i = 0; i < settings.TotalRequests; i++)
+        {
+            var model = CreateImportModel(i, settings.TotalRequests, settings.BatchSize);
+            totalMbToSend += GetBodySizeInMb(model);
+            models.Add(model);
+        }
+
+        Console.WriteLine("Models prepared. " +
+                          $"Total models: {models.Count}; Each with {settings.BatchSize} records; " +
+                          $"Total size: {totalMbToSend:0.##} MB");
+        return models;
     }
 
     private static double GetBodySizeInMb(string model) => (double)Encoding.UTF8.GetByteCount(model) / (1024 * 1024);
