@@ -6,11 +6,17 @@ public class ImportSettings
 
     public string ApiBase { get; set; }
 
-    public long TotalRecords { get; set; }
+    public int RecommendationsPerUser { get; set; }
+
+    public int TotalRecords { get; set; }
+
+    public long UserIdTemplate { get; set; }
+
+    public long RecommendedIdTemplate { get; set; }
 
     public int BatchSize { get; set; }
 
     public int RequestsParallelism { get; set; }
 
-    public long TotalRequests => TotalRecords / BatchSize;
+    public int TotalRequests => TotalRecords / BatchSize;
 }

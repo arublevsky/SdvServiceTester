@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using ApiTester.Recommendations.Models;
@@ -8,11 +9,6 @@ namespace ApiTester.Recommendations;
 
 public static class Importer
 {
-    private const long UserIdTemplate = 88_000_000_000;
-    private const long RecommendedIdTemplate = 77_00_000_000;
-
-    private static int requestsCounter = 0;
-
     public static async Task Run(ImportSettings settings, CancellationToken token)
     {
         using var client = new RestClient(settings.ApiBase);
@@ -33,23 +29,31 @@ public static class Importer
 
     private static async Task SendInParallel(ImportSettings settings, RestClient client, CancellationToken token)
     {
-        Console.WriteLine($"RequestsParallelism = {settings.RequestsParallelism}, sending models in parallel.");
-        var models = GenerateModels(settings);
-        await Parallel.ForEachAsync(
-            models,
-            new ParallelOptions
-            {
-                MaxDegreeOfParallelism = settings.RequestsParallelism,
-                CancellationToken = token
-            },
-            async (model, ct) =>
-            {
-                var request = CreateRequest(settings);
-                request.AddBody(model);
-                var response = await client.ExecuteAsync(request, ct);
-                Interlocked.Increment(ref requestsCounter);
-                Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{requestsCounter})");
-            });
+        Console.WriteLine($"RequestsParallelism = {settings.RequestsParallelism}, sending {settings.TotalRequests} models in parallel.");
+        try
+        {
+            await Parallel.ForEachAsync(
+                Enumerable.Range(1, settings.TotalRequests + 1),
+                GetParallelOptions(settings, token),
+                async (i, ct) =>
+                {
+                    var model = CreateImportModel(i, settings);
+                    await SendRequest(settings, client, model, i, ct);
+                });
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Process cancelled, stopping...");
+        }
+    }
+
+    private static ParallelOptions GetParallelOptions(ImportSettings settings, CancellationToken token)
+    {
+        return new ParallelOptions
+        {
+            MaxDegreeOfParallelism = settings.RequestsParallelism,
+            CancellationToken = token
+        };
     }
 
     private static async Task SendInSequence(
@@ -59,18 +63,31 @@ public static class Importer
     {
         Console.WriteLine("RequestsParallelism = 1, sending models one-by-one.");
 
-        var models = GenerateModels(settings);
+        var models = GenerateAllModels(settings);
 
         for (var i = 0; i < models.Count; i++)
         {
-            var request = CreateRequest(settings);
-            request.AddBody(models[i]);
-            var response = await client.ExecuteAsync(request, token);
-            Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{++i})");
+            await SendRequest(settings, client, models[i], i, token);
         }
     }
 
-    private static IList<string> GenerateModels(ImportSettings settings)
+    private static async Task SendRequest(
+        ImportSettings settings,
+        RestClient client,
+        string model,
+        int index,
+        CancellationToken token)
+    {
+        var request = CreateRequest(settings, model);
+        var response = await client.ExecuteAsync(request, token);
+        Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{index})");
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            Console.WriteLine($"Non success status code: [{response.Content}] [{response.ErrorMessage}]");
+        }
+    }
+
+    private static IList<string> GenerateAllModels(ImportSettings settings)
     {
         Console.WriteLine("Starting models generation... ");
         var models = new List<string>();
@@ -78,7 +95,7 @@ public static class Importer
 
         for (var i = 0; i < settings.TotalRequests; i++)
         {
-            var model = CreateImportModel(i, settings.TotalRequests, settings.BatchSize);
+            var model = CreateImportModel(i, settings);
             totalMbToSend += GetBodySizeInMb(model);
             models.Add(model);
         }
@@ -91,11 +108,12 @@ public static class Importer
 
     private static double GetBodySizeInMb(string model) => (double)Encoding.UTF8.GetByteCount(model) / (1024 * 1024);
 
-    private static RestRequest CreateRequest(ImportSettings settings)
+    private static RestRequest CreateRequest(ImportSettings settings, string model)
     {
         var request = new RestRequest(new Uri("/annals/users/recommendations", UriKind.Relative), Method.Patch);
         request.AddHeader("Content-Type", "application/json");
         request.AddHeader("Authorization", $"Token token=\"{settings.AuthToken}\"");
+        request.AddBody(model);
         return request;
     }
 
@@ -107,29 +125,35 @@ public static class Importer
         return sw.Elapsed.TotalSeconds;
     }
 
-    private static string CreateImportModel(long setId, long setsTotal, int totalItems)
+    private static string CreateImportModel(long setId, ImportSettings settings)
     {
-        var model = CreateEmptyModel(setId, setsTotal);
-        FillData(setId, totalItems, model);
+        var model = CreateEmptyModel(setId, settings.TotalRequests);
+        FillData(setId, settings, model);
         return JsonSerializer.Serialize(model);
     }
 
-    private static void FillData(long setId, int totalItems, Model model)
+    private static void FillData(long setId, ImportSettings settings, Model model)
     {
-        for (int i = 1; i < totalItems + 1; i++)
+        var i = 1;
+        while (i < settings.BatchSize + 1)
         {
-            model.Recommendations.Data.Add(new Data
+            var data = new Data
             {
-                UserId = UserIdTemplate + (setId * totalItems) + i,
-                Records = new[]
+                UserId = settings.UserIdTemplate + (setId * settings.BatchSize) + i,
+                Records = new List<Record>(),
+            };
+
+            for (var j = 1; j < settings.RecommendationsPerUser + 1; j++)
+            {
+                i++;
+                data.Records.Add(new Record
                 {
-                    new Record
-                    {
-                        S = i,
-                        RId = RecommendedIdTemplate + (setId * i) + i
-                    }
-                }
-            });
+                    S = Random.Shared.Next(1, 100),
+                    RId = settings.RecommendedIdTemplate + (setId * settings.BatchSize) + i + j
+                });
+            }
+
+            model.Recommendations.Data.Add(data);
         }
     }
 

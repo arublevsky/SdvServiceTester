@@ -8,5 +8,5 @@ public class Data
     public long UserId { get; set; }
 
     [JsonPropertyName("records")]
-    public Record[] Records { get; set; }
+    public List<Record> Records { get; set; }
 }
