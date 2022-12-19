@@ -11,6 +11,8 @@ public static class Importer
     private const long UserIdTemplate = 88_000_000_000;
     private const long RecommendedIdTemplate = 77_00_000_000;
 
+    private static int requestsCounter = 0;
+
     public static async Task Run(ImportSettings settings, CancellationToken token)
     {
         using var client = new RestClient(settings.ApiBase);
@@ -20,29 +22,18 @@ public static class Importer
         await RunImport(client, settings, token);
     }
 
-    private static async Task RunImport(
-        RestClient client,
-        ImportSettings settings,
-        CancellationToken token)
+    private static async Task RunImport(RestClient client, ImportSettings settings, CancellationToken token)
     {
-        var sw = Stopwatch.StartNew();
-        if (settings.RequestsParallelism > 1)
-        {
-            await SendInParallel(settings, client, token);
-        }
-        else
-        {
-            await SendInSequence(settings, client, token);
-        }
+        var secondsElapsed = settings.RequestsParallelism > 1
+            ? await Execute(() => SendInParallel(settings, client, token))
+            : await Execute(() => SendInSequence(settings, client, token));
 
-        sw.Stop();
-        Console.WriteLine($"All requests sent. Time elapsed: {sw.Elapsed.TotalSeconds:0.##}s");
+        Console.WriteLine($"All requests sent. Time elapsed: {secondsElapsed:0.##}s");
     }
 
     private static async Task SendInParallel(ImportSettings settings, RestClient client, CancellationToken token)
     {
         Console.WriteLine($"RequestsParallelism = {settings.RequestsParallelism}, sending models in parallel.");
-
         var models = GenerateModels(settings);
         await Parallel.ForEachAsync(
             models,
@@ -56,7 +47,8 @@ public static class Importer
                 var request = CreateRequest(settings);
                 request.AddBody(model);
                 var response = await client.ExecuteAsync(request, ct);
-                Console.WriteLine($"Request sent. Status code: {response.StatusCode}.");
+                Interlocked.Increment(ref requestsCounter);
+                Console.WriteLine($"Request sent. Status code: {response.StatusCode}. (#{requestsCounter})");
             });
     }
 
@@ -80,6 +72,7 @@ public static class Importer
 
     private static IList<string> GenerateModels(ImportSettings settings)
     {
+        Console.WriteLine("Starting models generation... ");
         var models = new List<string>();
         var totalMbToSend = 0d;
 
@@ -104,6 +97,14 @@ public static class Importer
         request.AddHeader("Content-Type", "application/json");
         request.AddHeader("Authorization", $"Token token=\"{settings.AuthToken}\"");
         return request;
+    }
+
+    private static async Task<double> Execute(Func<Task> action)
+    {
+        var sw = Stopwatch.StartNew();
+        await action();
+        sw.Stop();
+        return sw.Elapsed.TotalSeconds;
     }
 
     private static string CreateImportModel(long setId, long setsTotal, int totalItems)
